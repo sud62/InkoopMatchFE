@@ -102,7 +102,7 @@ function ProjectDetail() {
                 Required skills
               </h2>
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {p.tags.map((t) => (
+                {p.tags.map((t: string) => (
                   <span key={t} className="rk-chip">{t}</span>
                 ))}
               </div>
