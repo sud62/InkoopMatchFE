@@ -12,13 +12,6 @@ export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
 });
 
-const STATS = [
-  { label: "Matches", value: "12", accent: true, sub: "this week" },
-  { label: "Applied", value: "4", sub: "in review" },
-  { label: "Shortlisted", value: "2", sub: "by orgs" },
-  { label: "Avg rate", value: "€820", sub: "per day" },
-  { label: "Availability", value: "Open", sub: "from Jul 1" },
-];
 
 function Dashboard() {
   const hour = new Date().getHours();
