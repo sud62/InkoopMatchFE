@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * ReKruit design system — warm frosted-glass, olive accent.
+ * ReKruit design system — warm frosted-glass, terracotta & sage accent.
  * All tokens defined in src/styles.css per design doc v1.0.
  */
 
@@ -39,6 +39,8 @@
   --color-olive: var(--olive);
   --color-olive-dark: var(--olive-dark);
   --color-olive-light: var(--olive-light);
+  --color-sage: var(--sage);
+  --color-sage-light: var(--sage-light);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
 
@@ -48,16 +50,18 @@
 :root {
   --radius: 0.875rem;
 
-  /* Brand */
-  --olive: oklch(0.62 0.09 122);            /* #7A8C3A */
-  --olive-dark: oklch(0.38 0.09 128);       /* #3A5010 */
-  --olive-light: oklch(0.94 0.04 115);      /* #EBF0DB */
+  /* Brand — Terracotta & Sage */
+  --olive: #C4654A;            /* terracotta primary */
+  --olive-dark: #A0503A;       /* terracotta dark */
+  --olive-light: #F0D8CF;      /* terracotta light */
+  --sage: #4A6741;             /* deep sage */
+  --sage-light: #D4E0CF;       /* sage light */
 
-  /* Warm neutral base */
-  --background: oklch(0.89 0.012 90);       /* #E4E0D8 */
-  --foreground: oklch(0.21 0.018 120);      /* #1E2418 */
-  --text-secondary: oklch(0.48 0.025 110);  /* #6A7055 */
-  --text-tertiary: oklch(0.61 0.04 110);    /* #8A9070 */
+  /* Warm neutral base — cream */
+  --background: #F5F0E8;
+  --foreground: #2D2924;
+  --text-secondary: #6B6560;
+  --text-tertiary: #8A8378;
 
   /* Glass surfaces */
   --card: oklch(1 0 0 / 0.55);
@@ -108,10 +112,10 @@
   filter: blur(65px);
   opacity: 0.55;
 }
-.rk-blob-1 { width: 340px; height: 300px; top: -120px; left: -120px; background: #B8C49A; }
-.rk-blob-2 { width: 260px; height: 260px; top: -100px; right: -80px;  background: #D4C890; }
-.rk-blob-3 { width: 380px; height: 240px; bottom: -120px; left: -80px; background: #C8B87A; }
-.rk-blob-4 { width: 220px; height: 200px; bottom: -60px;  right: -40px; background: #A8B888; }
+.rk-blob-1 { width: 340px; height: 300px; top: -120px; left: -120px; background: #C4D4BC; }
+.rk-blob-2 { width: 260px; height: 260px; top: -100px; right: -80px;  background: #D8C4B8; }
+.rk-blob-3 { width: 380px; height: 240px; bottom: -120px; left: -80px; background: #D4B0A0; }
+.rk-blob-4 { width: 220px; height: 200px; bottom: -60px;  right: -40px; background: #B8C8B0; }
 
 /* ---------- Glass card ---------- */
 .rk-glass {
@@ -121,8 +125,8 @@
   border: 1px solid rgba(255,255,255,0.85);
   border-radius: 14px;
   box-shadow:
-    0 30px 80px -30px rgba(58,80,16,0.25),
-    0 8px 24px -12px rgba(30,36,24,0.18),
+    0 30px 80px -30px rgba(96,48,40,0.22),
+    0 8px 24px -12px rgba(45,41,36,0.18),
     inset 0 1px 0 0 rgba(255,255,255,0.6);
 }
 .rk-glass-header {
@@ -140,7 +144,7 @@
 }
 .rk-pill-accent {
   background: var(--olive-light);
-  border: 1px solid rgba(122,140,58,0.35);
+  border: 1px solid rgba(196,101,74,0.35);
   color: var(--olive-dark);
 }
 .rk-chip {
@@ -149,7 +153,7 @@
   border-radius: 6px;
   font-size: 10px;
   padding: 2px 7px;
-  color: #4A5438;
+  color: #5A5548;
 }
 .rk-leftbar {
   width: 3px;
@@ -161,4 +165,4 @@
 }
 
 /* Logo K */
-.rk-logo-k { color: #5A6B28; font-weight: 700; }
+.rk-logo-k { color: #A0503A; font-weight: 700; }
