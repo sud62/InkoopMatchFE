@@ -88,7 +88,7 @@ function ProjectDetail() {
                   return (
                     <div key={s} className="grid grid-cols-2 border-b border-white/40 px-3 py-2 text-[12px] last:border-0">
                       <span className="text-foreground">{s}</span>
-                      <span className={matched ? "text-[color:var(--olive-dark)]" : "text-[color:var(--text-tertiary)]"}>
+                      <span className={matched ? "text-[color:var(--sage)]" : "text-[color:var(--text-tertiary)]"}>
                         {matched ? "✓ On your CV" : "— Not detected"}
                       </span>
                     </div>
