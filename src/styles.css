@@ -112,10 +112,10 @@
   filter: blur(65px);
   opacity: 0.55;
 }
-.rk-blob-1 { width: 340px; height: 300px; top: -120px; left: -120px; background: #C4D4BC; }
-.rk-blob-2 { width: 260px; height: 260px; top: -100px; right: -80px;  background: #D8C4B8; }
-.rk-blob-3 { width: 380px; height: 240px; bottom: -120px; left: -80px; background: #D4B0A0; }
-.rk-blob-4 { width: 220px; height: 200px; bottom: -60px;  right: -40px; background: #B8C8B0; }
+.rk-blob-1 { width: 340px; height: 300px; top: -120px; left: -120px; background: #D0D4F0; }
+.rk-blob-2 { width: 260px; height: 260px; top: -100px; right: -80px;  background: #D8D0E8; }
+.rk-blob-3 { width: 380px; height: 240px; bottom: -120px; left: -80px; background: #C8D0E8; }
+.rk-blob-4 { width: 220px; height: 200px; bottom: -60px;  right: -40px; background: #E0E8F8; }
 
 /* ---------- Glass card ---------- */
 .rk-glass {
