@@ -50,18 +50,18 @@
 :root {
   --radius: 0.875rem;
 
-  /* Brand — Terracotta & Sage */
-  --olive: #C4654A;            /* terracotta primary */
-  --olive-dark: #A0503A;       /* terracotta dark */
-  --olive-light: #F0D8CF;      /* terracotta light */
-  --sage: #4A6741;             /* deep sage */
-  --sage-light: #D4E0CF;       /* sage light */
+  /* Brand — Off-white & Indigo */
+  --olive: #3B3B98;            /* indigo primary */
+  --olive-dark: #2A2A6E;       /* indigo dark */
+  --olive-light: #E8E5F5;      /* indigo light */
+  --sage: #6B6BC4;             /* soft indigo */
+  --sage-light: #D0D0F0;       /* soft indigo light */
 
-  /* Warm neutral base — cream */
-  --background: #F5F0E8;
-  --foreground: #2D2924;
-  --text-secondary: #6B6560;
-  --text-tertiary: #8A8378;
+  /* Cool neutral base — off-white */
+  --background: #FAFAF7;
+  --foreground: #1A1A2E;
+  --text-secondary: #5A5A6E;
+  --text-tertiary: #8A8A9E;
 
   /* Glass surfaces */
   --card: oklch(1 0 0 / 0.55);
