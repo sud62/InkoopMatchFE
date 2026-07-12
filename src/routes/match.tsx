@@ -6,7 +6,7 @@ import { MOCK_PROJECTS } from "@/lib/rk/projects";
 export const Route = createFileRoute("/match")({
   head: () => ({
     meta: [
-      { title: "Your matches — ReKruit" },
+      { title: "Your matches — InkoopMatch" },
       { name: "description", content: "Projects matched to your CV, ranked by fit." },
     ],
   }),

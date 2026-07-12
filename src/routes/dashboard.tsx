@@ -5,7 +5,7 @@ import { JobBoard } from "@/components/rk/JobBoard";
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "Dashboard — ReKruit" },
+      { title: "Dashboard — InkoopMatch" },
       { name: "description", content: "Your live freelance project matches, applications and shortlist." },
     ],
   }),

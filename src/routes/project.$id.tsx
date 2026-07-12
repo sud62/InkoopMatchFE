@@ -10,7 +10,7 @@ export const Route = createFileRoute("/project/$id")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.project.title ?? "Project"} — ReKruit` },
+      { title: `${loaderData?.project.title ?? "Project"} — InkoopMatch` },
       { name: "description", content: loaderData?.project.description ?? "Project detail" },
     ],
   }),

@@ -5,13 +5,13 @@ import { PageShell } from "@/components/rk/Shell";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "ReKruit — Upload your CV. See your matches." },
+      { title: "InkoopMatch — Upload your CV. See your matches." },
       {
         name: "description",
         content:
-          "ReKruit matches procurement, legal, compliance and contract freelancers to EU projects with a transparent fit score. Upload your CV once.",
+          "InkoopMatch matches procurement, legal, compliance and contract freelancers to EU projects with a transparent fit score. Upload your CV once.",
       },
-      { property: "og:title", content: "ReKruit — Upload your CV. See your matches." },
+      { property: "og:title", content: "InkoopMatch — Upload your CV. See your matches." },
       {
         property: "og:description",
         content: "Upload your CV once. See ranked freelance projects with fit scores and reasons.",
@@ -53,7 +53,7 @@ function Landing() {
             See your <span className="text-[color:var(--olive)]">matches</span>.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[color:var(--text-secondary)]">
-            ReKruit reads your CV and surfaces the EU procurement, legal, compliance and
+            InkoopMatch reads your CV and surfaces the EU procurement, legal, compliance and
             contract projects you actually fit — with a clear reason for every match.
           </p>
         </div>
