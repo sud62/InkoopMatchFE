@@ -20,9 +20,11 @@ export function Nav() {
         Inkoop<span className="rk-logo-k">Match</span>
       </Link>
       <div className="hidden items-center gap-8 text-[13px] text-[color:var(--text-secondary)] md:flex">
-        <a href="/#how" className="hover:text-foreground">How it works</a>
-        <a href="/#orgs" className="hover:text-foreground">For organisations</a>
-        <a href="/#about" className="hover:text-foreground">About</a>
+        <Link to="/" hash="how" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>How it works</Link>
+        <Link to="/" hash="orgs" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>For organisations</Link>
+        <Link to="/about" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>About</Link>
+
+
       </div>
       <SignInModal
         trigger={
