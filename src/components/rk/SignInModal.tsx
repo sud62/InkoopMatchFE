@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { useNavigate } from "@tanstack/react-router";
+import { signIn, nameFromEmail } from "@/lib/rk/session";
 
 type View = "signin" | "signup" | "forgot";
 
@@ -41,22 +43,50 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("signin");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const notImplemented = (what: string) => {
+  const completeSignIn = (session: { name: string; email: string }) => {
     setLoading(true);
     setTimeout(() => {
+      signIn(session);
       setLoading(false);
-      toast(`${what} is not connected yet`, {
-        description: "Enable a backend to activate authentication.",
-      });
-    }, 400);
+      setOpen(false);
+      setView("signin");
+      toast(`Welcome, ${session.name}`);
+      navigate({ to: "/match" });
+    }, 300);
+  };
+
+  const socialSignIn = (provider: "Google" | "Microsoft") => {
+    completeSignIn({
+      name: "Sudhanshu",
+      email: `sudhanshu@${provider.toLowerCase()}.com`,
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    notImplemented(
-      view === "signin" ? "Sign in" : view === "signup" ? "Sign up" : "Password reset"
-    );
+    const form = e.currentTarget as HTMLFormElement;
+    const data = new FormData(form);
+    const email = String(data.get("email") ?? "").trim();
+
+    if (view === "forgot") {
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        toast("Reset link sent", {
+          description: `If ${email} exists, you'll get an email shortly.`,
+        });
+        setView("signin");
+      }, 400);
+      return;
+    }
+
+    const name =
+      view === "signup"
+        ? String(data.get("name") ?? "").trim() || nameFromEmail(email)
+        : nameFromEmail(email);
+    completeSignIn({ name, email });
   };
 
   return (
@@ -89,7 +119,7 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
                 type="button"
                 variant="outline"
                 className="w-full justify-center gap-2"
-                onClick={() => notImplemented("Google sign-in")}
+                onClick={() => socialSignIn("Google")}
                 disabled={loading}
               >
                 <GoogleIcon />
@@ -99,7 +129,7 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
                 type="button"
                 variant="outline"
                 className="w-full justify-center gap-2"
-                onClick={() => notImplemented("Microsoft sign-in")}
+                onClick={() => socialSignIn("Microsoft")}
                 disabled={loading}
               >
                 <MicrosoftIcon />
@@ -120,12 +150,12 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
           {view === "signup" && (
             <div className="grid gap-1.5">
               <Label htmlFor="name">Full name</Label>
-              <Input id="name" required placeholder="Ada Lovelace" />
+              <Input id="name" name="name" required placeholder="Ada Lovelace" />
             </div>
           )}
           <div className="grid gap-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required placeholder="you@company.com" />
+            <Input id="email" name="email" type="email" required placeholder="you@company.com" />
           </div>
           {view !== "forgot" && (
             <div className="grid gap-1.5">
@@ -141,7 +171,7 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
                   </button>
                 )}
               </div>
-              <Input id="password" type="password" required minLength={8} placeholder="••••••••" />
+              <Input id="password" name="password" type="password" required minLength={8} placeholder="••••••••" />
             </div>
           )}
 
