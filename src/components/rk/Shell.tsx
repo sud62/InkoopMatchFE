@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { SignInModal } from "@/components/rk/SignInModal";
+import { useSession, signOut } from "@/lib/rk/session";
 
 export function Ambient() {
   return (
@@ -13,7 +14,36 @@ export function Ambient() {
   );
 }
 
+function UserMenu({ name }: { name: string }) {
+  const navigate = useNavigate();
+  const initial = name.trim().charAt(0).toUpperCase() || "U";
+  return (
+    <div className="flex items-center gap-3">
+      <span className="hidden text-[13px] text-[color:var(--text-secondary)] sm:inline">
+        {name}
+      </span>
+      <div
+        aria-hidden="true"
+        className="flex size-8 items-center justify-center rounded-full bg-[color:var(--olive)] text-[12px] font-semibold text-white"
+      >
+        {initial}
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          signOut();
+          navigate({ to: "/" });
+        }}
+        className="rk-pill px-4 py-1.5 text-[13px] font-medium text-foreground hover:bg-white/80"
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
+
 export function Nav() {
+  const session = useSession();
   return (
     <nav className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
       <Link to="/" className="text-[16px] font-semibold tracking-tight text-foreground">
@@ -23,19 +53,21 @@ export function Nav() {
         <Link to="/" hash="how" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>How it works</Link>
         <Link to="/" hash="orgs" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>For organisations</Link>
         <Link to="/about" className="hover:text-foreground" activeProps={{ className: "text-foreground" }}>About</Link>
-
-
       </div>
-      <SignInModal
-        trigger={
-          <button
-            type="button"
-            className="rk-pill px-4 py-1.5 text-[13px] font-medium text-foreground hover:bg-white/80"
-          >
-            Sign in
-          </button>
-        }
-      />
+      {session ? (
+        <UserMenu name={session.name} />
+      ) : (
+        <SignInModal
+          trigger={
+            <button
+              type="button"
+              className="rk-pill px-4 py-1.5 text-[13px] font-medium text-foreground hover:bg-white/80"
+            >
+              Sign in
+            </button>
+          }
+        />
+      )}
     </nav>
   );
 }
