@@ -1,6 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { PageShell } from "@/components/rk/Shell";
+import { RequireGuest } from "@/components/rk/guards";
+import { SignInModal } from "@/components/rk/SignInModal";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -11,172 +14,160 @@ export const Route = createFileRoute("/")({
         content:
           "InkoopMatch matches procurement, legal, compliance and contract freelancers to EU projects with a transparent fit score. Upload your CV once.",
       },
-      { property: "og:title", content: "InkoopMatch — Upload your CV. See your matches." },
-      {
-        property: "og:description",
-        content: "Upload your CV once. See ranked freelance projects with fit scores and reasons.",
-      },
     ],
   }),
-  component: Landing,
+  component: () => (
+    <RequireGuest>
+      <Landing />
+    </RequireGuest>
+  ),
 });
 
 function Landing() {
-  const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [status, setStatus] = useState<"idle" | "reading" | "matching">("idle");
   const [error, setError] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const signupTriggerRef = useRef<HTMLButtonElement>(null);
+  const { t } = useLanguage();
 
   const handleFile = (file?: File | null) => {
     if (!file) return;
-    const ok = /\.(pdf|docx?|txt)$/i.test(file.name);
-    if (!ok) {
+    if (!/\.(pdf|docx?|txt)$/i.test(file.name)) {
       setError("Please upload a PDF or Word document.");
       return;
     }
     setError(null);
-    setStatus("reading");
-    setTimeout(() => setStatus("matching"), 1100);
-    setTimeout(() => navigate({ to: "/match" }), 2400);
+    setPicked(file.name);
+    signupTriggerRef.current?.click();
   };
 
   return (
     <PageShell>
-      <section className="pt-10 md:pt-16">
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="rk-pill inline-block px-3 py-1 text-[11px] font-medium text-[color:var(--olive-dark)]">
-            GDPR-compliant · Your CV is never shared without your consent
-          </span>
-          <h1 className="mt-5 text-4xl font-semibold leading-[1.05] tracking-tight text-foreground md:text-6xl">
-            Upload your CV.
-            <br />
-            See your <span className="text-[color:var(--olive)]">matches</span>.
+      <section className="hero shell" aria-labelledby="hero-title">
+        <div className="hero-copy">
+          <div className="eyebrow">
+            <span aria-hidden="true">✓</span> {t("landing.badge")}
+          </div>
+          <h1 id="hero-title">
+            {t("landing.heroLine1")} {t("landing.heroLine2")}{" "}
+            <em>{t("landing.heroLine2Accent")}.</em>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[color:var(--text-secondary)]">
-            InkoopMatch reads your CV and surfaces the EU procurement, legal, compliance and
-            contract projects you actually fit — with a clear reason for every match.
+          <p className="lead">{t("landing.subtitle")}</p>
+          <p className="human-note">
+            <span aria-hidden="true">♡</span> {t("landing.humanNote")}
           </p>
+          <Link className="text-link" to="/how-it-works">
+            {t("landing.seeHowItWorks")} <span>→</span>
+          </Link>
         </div>
 
-        {/* Glass upload card */}
-        <div className="rk-glass mx-auto mt-10 max-w-2xl overflow-hidden">
-          <div className="rk-glass-header flex items-center justify-between px-6 py-4">
-            <div>
-              <h2 className="text-[15px] font-semibold text-foreground">Start with your CV</h2>
-              <p className="text-[12px] text-[color:var(--text-secondary)]">
-                One upload. No account needed to see your matches.
-              </p>
-            </div>
-            <span className="rk-pill-accent rounded-full px-2.5 py-0.5 text-[11px] font-semibold">
-              ~ 20 seconds
-            </span>
+        <div className="hero-art" aria-hidden="true">
+          <div className="profile one" />
+          <div className="profile two" />
+          <div className="paper">
+            <i /><i /><i />
           </div>
+          <div className="checklist">
+            <i>✓</i><i>✓</i><i>✓</i>
+          </div>
+          <div className="connector" />
+        </div>
 
-          <div className="p-6">
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                handleFile(e.dataTransfer.files?.[0]);
-              }}
-              disabled={status !== "idle"}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/90 bg-white/40 py-12 text-center transition hover:bg-white/55 disabled:opacity-80"
-            >
-              {status === "idle" && (
-                <>
-                  <div className="rk-pill flex size-10 items-center justify-center">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[color:var(--olive-dark)]">
-                      <path d="M12 5v14M5 12l7-7 7 7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <p className="text-[13px] font-medium text-foreground">
-                    Drop your CV here, or click to upload
-                  </p>
-                  <p className="text-[11px] text-[color:var(--text-tertiary)]">
-                    PDF or Word · up to 5 MB
-                  </p>
-                </>
-              )}
-              {status === "reading" && (
-                <p className="text-[13px] font-medium text-foreground">Reading your CV…</p>
-              )}
-              {status === "matching" && (
-                <p className="text-[13px] font-medium text-foreground">Finding matches…</p>
-              )}
-            </button>
+        <section className="upload-card" aria-labelledby="upload-title">
+          <p className="step-label">{t("landing.timeEstimate")}</p>
+          <h2 id="upload-title">{t("landing.startTitle")}</h2>
+          <div
+            className={`dropzone ${dragging ? "is-dragging" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              handleFile(e.dataTransfer.files?.[0]);
+            }}
+            onClick={() => inputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+            }}
+          >
             <input
               ref={inputRef}
               type="file"
               accept=".pdf,.doc,.docx,.txt"
-              className="hidden"
               onChange={(e) => handleFile(e.target.files?.[0])}
+              hidden
             />
-            {error && (
-              <p className="mt-3 text-[12px] text-[color:var(--destructive)]">{error}</p>
-            )}
-            <div className="mt-4 flex items-center justify-between text-[11px] text-[color:var(--text-tertiary)]">
-              <span>No recruiter spam. Ever.</span>
-              <button
-                onClick={() => navigate({ to: "/match" })}
-                className="font-medium text-[color:var(--olive-dark)] underline-offset-2 hover:underline"
-              >
-                Skip and preview matches →
-              </button>
-            </div>
+            <span className="upload-icon" aria-hidden="true">↑</span>
+            <strong>{picked ? picked : t("landing.dropCv")}</strong>
+            <span>{t("landing.fileHint")}</span>
           </div>
-        </div>
+          {error && (
+            <p style={{ color: "#b3442f", fontSize: 12, marginTop: 8 }}>{error}</p>
+          )}
+          <p className="privacy">
+            <span aria-hidden="true">♢</span> {t("landing.noSpam")}
+          </p>
+        </section>
+      </section>
 
-        {/* Stats */}
-        <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-3 text-center">
+      <section className="proof" aria-label="Waarom InkoopMatch">
+        <div className="shell proof-grid">
           {[
-            ["2,400+", "active projects"],
-            ["84%", "match accuracy"],
-            ["3 days", "avg. first reply"],
-          ].map(([n, l]) => (
-            <div key={l} className="rk-glass px-3 py-4">
-              <div className="text-[18px] font-semibold text-foreground">{n}</div>
-              <div className="text-[11px] text-[color:var(--text-secondary)]">{l}</div>
-            </div>
+            ["▣", t("landing.proof1Title"), t("landing.proof1Desc")],
+            ["◎", t("landing.proof2Title"), t("landing.proof2Desc")],
+            ["✓", t("landing.proof3Title"), t("landing.proof3Desc")],
+          ].map(([icon, title, desc]) => (
+            <article key={title}>
+              <span className="proof-icon">{icon}</span>
+              <div>
+                <strong>{title}</strong>
+                <p>{desc}</p>
+              </div>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="mt-24">
-        <h2 className="text-center text-[12px] font-semibold uppercase tracking-[0.18em] text-[color:var(--text-tertiary)]">
-          How it works
-        </h2>
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <section className="how shell" id="how">
+        <p className="section-kicker">{t("landing.howItWorks")}</p>
+        <h2>{t("landing.heroLine1")}</h2>
+        <div className="steps">
           {[
-            ["01", "Upload once", "We read your CV and extract skills, seniority and role focus."],
-            ["02", "See fit scores", "Every match shows exactly which of your skills lined up — and which didn't."],
-            ["03", "Apply in one click", "We send your profile to the organisation. You stay in control of consent."],
-          ].map(([n, t, d]) => (
-            <div key={n} className="rk-glass p-5">
-              <div className="text-[11px] font-semibold text-[color:var(--olive-dark)]">{n}</div>
-              <h3 className="mt-2 text-[15px] font-semibold text-foreground">{t}</h3>
-              <p className="mt-1 text-[12px] leading-relaxed text-[color:var(--text-secondary)]">{d}</p>
-            </div>
+            ["01", t("landing.step1Title"), t("landing.step1Desc")],
+            ["02", t("landing.step2Title"), t("landing.step2Desc")],
+            ["03", t("landing.step3Title"), t("landing.step3Desc")],
+          ].map(([n, title, desc]) => (
+            <article key={n}>
+              <span>{n}</span>
+              <h3>{title}</h3>
+              <p>{desc}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      <section id="orgs" className="mt-20 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          Hiring on the other side?
-        </h2>
-        <p className="mx-auto mt-2 max-w-md text-[13px] text-[color:var(--text-secondary)]">
-          Post a project and receive pre-screened, contextually matched freelance profiles.
-        </p>
-        <Link
-          to="/"
-          className="rk-pill-accent mt-5 inline-block px-5 py-2 text-[13px] font-semibold"
-        >
-          For organisations →
-        </Link>
+      <section className="organisation" id="organisaties">
+        <div className="shell organisation-inner">
+          <div>
+            <p className="section-kicker">{t("nav.forOrganisations")}</p>
+            <h2>{t("landing.questionsTitle")}</h2>
+            <p>{t("landing.questionsSubtitle")}</p>
+          </div>
+          <Link className="button button-light" to="/contact">
+            {t("landing.contactUs")}
+          </Link>
+        </div>
       </section>
+
+      <div style={{ display: "none" }}>
+        <SignInModal trigger={<button ref={signupTriggerRef} type="button">open signup</button>} />
+      </div>
     </PageShell>
   );
 }

@@ -1,136 +1,208 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
-import { PageShell } from "@/components/rk/Shell";
-import { MOCK_PROJECTS } from "@/lib/rk/projects";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { DashShell } from "@/components/rk/Shell";
+import { RequireAuth } from "@/components/rk/guards";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useLanguage } from "@/lib/i18n/LanguageProvider";
+import {
+  getCandidateJob,
+  getMyApplications,
+  applyToJob,
+  type CandidateJob,
+} from "@/lib/api/client";
 
 export const Route = createFileRoute("/project/$id")({
-  loader: ({ params }) => {
-    const project = MOCK_PROJECTS.find((p) => p.id === params.id);
-    if (!project) throw notFound();
-    return { project };
-  },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: `${loaderData?.project.title ?? "Project"} — InkoopMatch` },
-      { name: "description", content: loaderData?.project.description ?? "Project detail" },
-    ],
-  }),
-  component: ProjectDetail,
-  notFoundComponent: () => (
-    <PageShell>
-      <div className="rk-glass p-10 text-center">
-        <h1 className="text-xl font-semibold">Project not found</h1>
-        <Link to="/dashboard" className="mt-3 inline-block text-[color:var(--olive-dark)] underline">
-          Back to dashboard
-        </Link>
-      </div>
-    </PageShell>
+  head: () => ({ meta: [{ title: "Project — InkoopMatch" }] }),
+  component: () => (
+    <RequireAuth>
+      <ProjectDetail />
+    </RequireAuth>
   ),
-  errorComponent: ({ reset }) => {
-    const router = useRouter();
-    return (
-      <PageShell>
-        <div className="rk-glass p-10 text-center">
-          <h1 className="text-xl font-semibold">Something went wrong</h1>
-          <button
-            onClick={() => { router.invalidate(); reset(); }}
-            className="rk-pill-accent mt-4 px-4 py-2 text-sm font-semibold"
-          >
-            Try again
-          </button>
-        </div>
-      </PageShell>
-    );
-  },
 });
 
+function formatDeadline(deadline: string | null): string | null {
+  if (!deadline) return null;
+  const d = new Date(deadline);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
 function ProjectDetail() {
-  const { project: p } = Route.useLoaderData();
-  return (
-    <PageShell>
-      <div className="rk-glass overflow-hidden">
-        <div className="rk-glass-header flex flex-wrap items-start justify-between gap-4 px-6 py-5">
-          <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[color:var(--text-tertiary)]">
-              ID {p.id} · {p.category}
-            </p>
-            <h1 className="mt-1 text-[22px] font-semibold leading-tight text-foreground">
-              {p.title}
-            </h1>
-            <p className="mt-1 text-[12px] text-[color:var(--text-secondary)]">
-              {p.org} · {p.location} · {p.duration} · {p.mode} · {p.rate}
-            </p>
-          </div>
-          <div className="rk-pill-accent rounded-full px-3 py-1 text-[12px] font-semibold">
-            {p.fit}% fit
-          </div>
+  const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const { getIdToken } = useAuth();
+  const { t } = useLanguage();
+
+  const [job, setJob] = useState<CandidateJob | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [applied, setApplied] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const token = await getIdToken();
+      const [j, apps] = await Promise.all([
+        getCandidateJob(token, id),
+        getMyApplications(token),
+      ]);
+      if (!active) return;
+      if (!j) {
+        setNotFound(true);
+      } else {
+        setJob(j);
+        setApplied(apps.jobIds.includes(id));
+      }
+      setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id, getIdToken]);
+
+  const handleApply = async () => {
+    if (applied || applying) return;
+    setApplying(true);
+    try {
+      const token = await getIdToken();
+      const res = await applyToJob(token, id);
+      setApplied(true);
+      toast(res.alreadyApplied ? "Already applied" : "Application sent", {
+        description: res.alreadyApplied
+          ? "You'd already applied to this project."
+          : "The organisation will see your profile.",
+      });
+    } catch {
+      toast("Couldn't apply", { description: "Please try again in a moment." });
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashShell>
+        <div className="shell" style={{ padding: "60px 0", textAlign: "center", color: "var(--muted)" }}>
+          Loading…
         </div>
+      </DashShell>
+    );
+  }
 
-        <div className="grid gap-6 p-6 md:grid-cols-[2fr_1fr]">
-          <div className="space-y-5">
-            <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--text-tertiary)]">
-                About the project
-              </h2>
-              <p className="mt-2 text-[13px] leading-relaxed text-foreground">{p.description}</p>
-            </section>
+  if (notFound || !job) {
+    return (
+      <DashShell>
+        <div className="shell" style={{ padding: "60px 0", textAlign: "center" }}>
+          <h1>{t("project.notFound")}</h1>
+          <button onClick={() => navigate({ to: "/dashboard" })} className="back">
+            {t("project.backToDashboard")}
+          </button>
+        </div>
+      </DashShell>
+    );
+  }
 
-            <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--text-tertiary)]">
-                Fit breakdown
-              </h2>
-              <div className="mt-2 overflow-hidden rounded-lg border border-white/70 bg-white/40">
-                <div className="grid grid-cols-2 border-b border-white/60 bg-white/30 px-3 py-2 text-[11px] font-semibold text-[color:var(--text-secondary)]">
-                  <span>Required skill</span>
-                  <span>Status</span>
-                </div>
-                {[...p.matchedSkills, ...p.unmatchedSkills].map((s) => {
-                  const matched = p.matchedSkills.includes(s);
-                  return (
-                    <div key={s} className="grid grid-cols-2 border-b border-white/40 px-3 py-2 text-[12px] last:border-0">
-                      <span className="text-foreground">{s}</span>
-                      <span className={matched ? "text-[color:var(--sage)]" : "text-[color:var(--text-tertiary)]"}>
-                        {matched ? "✓ On your CV" : "— Not detected"}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+  const p = job;
+  const hasScore = p.fitScore !== null;
+  const deadline = formatDeadline(p.deadline);
+  const metaLine = [p.org, p.location, p.duration, p.mode].filter(Boolean).join(" · ");
+  const isNew = p.postedHoursAgo < 24;
+  const statusLabel =
+    p.status.toLowerCase() === "open" ? t("dashboard.open") : t("dashboard.closed");
+  const tierLabel = !hasScore
+    ? ""
+    : (p.fitScore ?? 0) >= 45
+      ? t("dashboard.strongMatch")
+      : (p.fitScore ?? 0) >= 30
+        ? t("dashboard.goodMatch")
+        : t("dashboard.worthALook");
 
-            <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--text-tertiary)]">
-                Required skills
-              </h2>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {p.tags.map((t: string) => (
-                  <span key={t} className="rk-chip">{t}</span>
-                ))}
-              </div>
-            </section>
-          </div>
+  return (
+    <DashShell>
+      <div className="shell">
+        <Link className="back" to="/dashboard">
+          ← {t("project.backToMatches")}
+        </Link>
 
-          <aside className="space-y-4">
-            <div className="rk-glass p-4">
-              <p className="text-[11px] text-[color:var(--text-secondary)]">Day rate</p>
-              <p className="text-[18px] font-semibold text-foreground">{p.rate}</p>
-              <p className="mt-3 text-[11px] text-[color:var(--text-secondary)]">Start date</p>
-              <p className="text-[13px] font-medium text-foreground">As soon as possible</p>
-            </div>
-            <button className="w-full rounded-lg bg-[color:var(--olive)] py-2.5 text-[13px] font-semibold text-white shadow-sm transition hover:bg-[color:var(--olive-dark)]">
-              Apply with my CV
-            </button>
-            <p className="text-center text-[10px] text-[color:var(--text-tertiary)]">
-              Your CV is shared only after you confirm.
+        <section className="detail-hero">
+          <div>
+            <p className="match-meta">
+              {isNew && <b>{t("dashboard.newBadge")}</b>} ID {p.id} · {statusLabel.toUpperCase()}
             </p>
-            <Link
-              to="/dashboard"
-              className="block text-center text-[11px] text-[color:var(--text-secondary)] hover:text-foreground"
+            <h1>{p.title}</h1>
+            {metaLine && <p>{metaLine}</p>}
+          </div>
+          <div className="big-score">
+            {hasScore ? (
+              <>
+                <strong>{p.fitScore}%</strong>
+                <span>{tierLabel}</span>
+              </>
+            ) : (
+              <span>{t("project.scoringInProgress")}</span>
+            )}
+          </div>
+        </section>
+
+        <div className="detail-layout">
+          <article className="detail-content">
+            <section>
+              <p className="section-kicker">{t("project.aboutProject")}</p>
+              <h2>{p.title}</h2>
+              <p>{p.description}</p>
+            </section>
+
+            {hasScore && (
+              <section>
+                <p className="section-kicker">{t("project.fitBreakdown")}</p>
+                <p style={{ color: "#52616b" }}>{t("project.evidenceComingSoon")}</p>
+              </section>
+            )}
+
+            {!hasScore && (
+              <section>
+                <p className="section-kicker">{t("project.scoringInProgress")}</p>
+                <p style={{ color: "#52616b" }}>{t("project.scoringExplainer")}</p>
+              </section>
+            )}
+
+            {p.tags.length > 0 && (
+              <section>
+                <p className="section-kicker">{t("project.requiredSkills")}</p>
+                <div className="tags">
+                  {p.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+              </section>
+            )}
+          </article>
+
+          <aside className="apply-panel">
+            {p.rate && (
+              <>
+                <p>{t("project.dayRate")}</p>
+                <strong>{p.rate}</strong>
+                <hr />
+              </>
+            )}
+            <p>{t("project.deadline")}</p>
+            <strong>{deadline ?? t("project.notSpecified")}</strong>
+            <button
+              className="button button-primary"
+              onClick={handleApply}
+              disabled={applied || applying}
             >
-              ← Back to matches
-            </Link>
+              {applied ? t("project.appliedButton") : applying ? t("project.applying") : t("project.applyButton")}
+            </button>
+            <small>
+              {applied ? t("project.consentAfterApply") : t("project.consentBeforeApply")}
+            </small>
           </aside>
         </div>
       </div>
-    </PageShell>
+    </DashShell>
   );
 }
