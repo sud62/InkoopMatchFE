@@ -52,7 +52,12 @@ export function ConsentModal({
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
         className="auth-card [&>button:last-of-type]:hidden"
-        style={{ maxWidth: 480, textAlign: "left" }}
+        style={{
+          maxWidth: 480,
+          textAlign: "left",
+          maxHeight: "88vh",
+          overflowY: "auto",
+        }}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
