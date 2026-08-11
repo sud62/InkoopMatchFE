@@ -28,20 +28,28 @@ export function RequireAuth({
   children: ReactNode;
   requireProfile?: boolean;
 }) {
-  const { isReady, isAuthenticated, profileCompleted } = useAuth();
+  const { isReady, isAuthenticated, profileCompleted, syncCompleted } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isReady) return;
     if (!isAuthenticated) {
       navigate({ to: "/" });
-    } else if (requireProfile && !profileCompleted) {
+      return;
+    }
+    // Wait for the /api/user-sync round-trip before routing on
+    // profileCompleted — otherwise a still-in-flight sync looks
+    // identical to "profile not complete" and kicks the user to
+    // /onboarding even when their profile is already done.
+    if (!syncCompleted) return;
+    if (requireProfile && !profileCompleted) {
       navigate({ to: "/onboarding" });
     }
-  }, [isReady, isAuthenticated, profileCompleted, requireProfile, navigate]);
+  }, [isReady, isAuthenticated, syncCompleted, profileCompleted, requireProfile, navigate]);
 
   if (!isReady) return <Blocking />;
   if (!isAuthenticated) return <Blocking />;
+  if (!syncCompleted) return <Blocking />;
   if (requireProfile && !profileCompleted) return <Blocking />;
   return <>{children}</>;
 }

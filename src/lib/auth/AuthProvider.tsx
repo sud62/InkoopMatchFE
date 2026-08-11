@@ -70,6 +70,15 @@ type AuthContextValue = {
   userId: number | null;
   profileCompleted: boolean;
   consentGiven: boolean;
+  /**
+   * True once the initial /api/user-sync round-trip has finished
+   * (success OR failure). Guards MUST wait for this before routing on
+   * `profileCompleted` / `consentGiven`, because "false" from those two
+   * flags is otherwise ambiguous between "the answer really is no" and
+   * "we haven't heard from the backend yet" — and the second one
+   * caused users with completed profiles to get bounced to /onboarding.
+   */
+  syncCompleted: boolean;
   refreshSync: () => Promise<void>;
 
   getIdToken: () => Promise<string | null>;
@@ -180,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<number | null>(null);
   const [profileCompleted, setProfileCompleted] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
+  const [syncCompleted, setSyncCompleted] = useState(false);
 
   const [signUpStep, setSignUpStep] = useState<FlowStep>("idle");
   const [signUpError, setSignUpError] = useState<string | null>(null);
@@ -219,6 +229,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setConsentGiven(result.consentGiven);
     } catch (e) {
       console.error("[auth] user-sync failed", e);
+    } finally {
+      // Always flip this — even on failure — so guards can make a
+      // decision either way. Blocking forever on a failed sync is
+      // worse than routing on the last-known-good values.
+      setSyncCompleted(true);
     }
   };
 
@@ -506,6 +521,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUserId(null);
     setProfileCompleted(false);
     setConsentGiven(false);
+    setSyncCompleted(false);
   };
 
   const value = useMemo<AuthContextValue>(
@@ -516,6 +532,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userId,
       profileCompleted,
       consentGiven,
+      syncCompleted,
       refreshSync,
       getIdToken,
       logout,
@@ -545,6 +562,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userId,
       profileCompleted,
       consentGiven,
+      syncCompleted,
       signUpStep,
       signUpError,
       signInStep,
