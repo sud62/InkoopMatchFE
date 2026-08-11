@@ -71,6 +71,10 @@ export type UserSyncResult = {
   userId: number;
   isNewUser: boolean;
   profileCompleted: boolean;
+  // Mirrors users.cv_consent_given_at IS NOT NULL — lets the frontend
+  // skip re-showing the consent modal for someone who already agreed,
+  // even if they land back on onboarding for an unrelated reason.
+  consentGiven: boolean;
 };
 
 /**
@@ -90,7 +94,12 @@ export async function syncUser(token: string): Promise<UserSyncResult> {
     const doneKey = `mock.profileCompleted:${email}`;
     const done =
       typeof window !== "undefined" && window.sessionStorage.getItem(doneKey) === "1";
-    return { userId: 1, isNewUser: !done, profileCompleted: done };
+    // Same key recordConsent's mock branch already sets — previously
+    // never read back here, so the mock consent modal reappeared every
+    // sync regardless of whether mock.consentGiven had been set.
+    const consentGiven =
+      typeof window !== "undefined" && window.sessionStorage.getItem("mock.consentGiven") === "1";
+    return { userId: 1, isNewUser: !done, profileCompleted: done, consentGiven };
   }
   return callApi<UserSyncResult>("/user-sync", { method: "POST", token });
 }

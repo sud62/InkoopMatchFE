@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -62,8 +62,12 @@ export function ConsentModal({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <p className="section-kicker">{t("consent.title")}</p>
-        <h1 style={{ fontSize: 22 }}>{t("consent.title")}</h1>
-        <p>{t("consent.subtitle")}</p>
+        <DialogTitle asChild>
+          <h1 style={{ fontSize: 22 }}>{t("consent.title")}</h1>
+        </DialogTitle>
+        <DialogDescription asChild>
+          <p>{t("consent.subtitle")}</p>
+        </DialogDescription>
 
         <ul style={{ listStyle: "none", padding: 0, margin: "14px 0" }}>
           {points.map((point) => (

@@ -16,7 +16,7 @@ function Brand({ to }: { to: string | null }) {
   const inner = (
     <>
       <span className="brand-crop">
-        <img src="public/inkoopmatch-beeldmerk.svg" alt="" width={72} height={35} />
+        <img src="/inkoopmatch-beeldmerk.svg" alt="" width={72} height={35} />
       </span>
       <span>
         Inkoop<span>Match</span>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -148,26 +148,30 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
           {view === "forgot-code" && t("auth.checkEmail")}
           {view === "forgot-newpassword" && t("auth.chooseNewPasswordTitle")}
         </p>
-        <h1>
-          {view === "signin" && t("auth.welcomeBack")}
-          {view === "signup" && t("auth.createAccount")}
-          {view === "verify" && t("auth.checkEmail")}
-          {view === "forgot" && t("auth.resetPassword")}
-          {view === "forgot-code" && t("auth.checkEmail")}
-          {view === "forgot-newpassword" && t("auth.chooseNewPasswordTitle")}
-        </h1>
-        <p>
-          {view === "signin" && t("auth.signInSubtitle")}
-          {view === "signup" && t("auth.signUpSubtitle")}
-          {view === "verify" && (
-            <>We sent a code to <strong>{email}</strong>. Enter it below.</>
-          )}
-          {view === "forgot" && t("auth.forgotSubtitle")}
-          {view === "forgot-code" && (
-            <>We sent a code to <strong>{email}</strong>. Enter it below.</>
-          )}
-          {view === "forgot-newpassword" && t("auth.chooseNewPasswordSubtitle")}
-        </p>
+        <DialogTitle asChild>
+          <h1>
+            {view === "signin" && t("auth.welcomeBack")}
+            {view === "signup" && t("auth.createAccount")}
+            {view === "verify" && t("auth.checkEmail")}
+            {view === "forgot" && t("auth.resetPassword")}
+            {view === "forgot-code" && t("auth.checkEmail")}
+            {view === "forgot-newpassword" && t("auth.chooseNewPasswordTitle")}
+          </h1>
+        </DialogTitle>
+        <DialogDescription asChild>
+          <p>
+            {view === "signin" && t("auth.signInSubtitle")}
+            {view === "signup" && t("auth.signUpSubtitle")}
+            {view === "verify" && (
+              <>We sent a code to <strong>{email}</strong>. Enter it below.</>
+            )}
+            {view === "forgot" && t("auth.forgotSubtitle")}
+            {view === "forgot-code" && (
+              <>We sent a code to <strong>{email}</strong>. Enter it below.</>
+            )}
+            {view === "forgot-newpassword" && t("auth.chooseNewPasswordSubtitle")}
+          </p>
+        </DialogDescription>
 
         {(view === "signin" || view === "signup") && (
           <button

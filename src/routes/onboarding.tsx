@@ -41,7 +41,7 @@ const AVAILABILITY = ["Immediately", "Within 2 weeks", "Within a month", "Just e
 
 function Onboarding() {
   const navigate = useNavigate();
-  const { getIdToken, refreshSync, profileCompleted } = useAuth();
+  const { getIdToken, refreshSync, profileCompleted, consentGiven } = useAuth();
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -60,7 +60,10 @@ function Onboarding() {
 
   // Consent must be given before the CV is uploaded/processed at all —
   // gated as a blocking modal shown as soon as onboarding loads.
-  const [consentGiven, setConsentGiven] = useState(false);
+  // `consentGiven` comes from AuthProvider's context (synced from the
+  // server on every login), not local state — so someone who already
+  // agreed doesn't see this modal again just because they landed back
+  // on onboarding for an unrelated reason (e.g. profile not finished).
   const [consenting, setConsenting] = useState(false);
 
   const handleAgree = async () => {
@@ -75,7 +78,10 @@ function Onboarding() {
           setTimeout(() => reject(new Error("timeout")), 15000),
         ),
       ]);
-      setConsentGiven(true);
+      // Re-sync so context's consentGiven flips true from the real
+      // server value, rather than trusting a local flag that could
+      // drift from what's actually recorded.
+      await refreshSync();
     } catch {
       toast("Couldn't save your consent", {
         description: "That took too long — please check your connection and try again.",

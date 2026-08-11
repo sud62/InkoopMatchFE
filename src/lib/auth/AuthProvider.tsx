@@ -69,6 +69,7 @@ type AuthContextValue = {
   // From /api/user-sync — the app's own identity + onboarding gate.
   userId: number | null;
   profileCompleted: boolean;
+  consentGiven: boolean;
   refreshSync: () => Promise<void>;
 
   getIdToken: () => Promise<string | null>;
@@ -178,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [userId, setUserId] = useState<number | null>(null);
   const [profileCompleted, setProfileCompleted] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
 
   const [signUpStep, setSignUpStep] = useState<FlowStep>("idle");
   const [signUpError, setSignUpError] = useState<string | null>(null);
@@ -214,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result: UserSyncResult = await syncUser(token);
       setUserId(result.userId);
       setProfileCompleted(result.profileCompleted);
+      setConsentGiven(result.consentGiven);
     } catch (e) {
       console.error("[auth] user-sync failed", e);
     }
@@ -502,6 +505,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setUserId(null);
     setProfileCompleted(false);
+    setConsentGiven(false);
   };
 
   const value = useMemo<AuthContextValue>(
@@ -511,6 +515,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       userId,
       profileCompleted,
+      consentGiven,
       refreshSync,
       getIdToken,
       logout,
@@ -539,6 +544,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       userId,
       profileCompleted,
+      consentGiven,
       signUpStep,
       signUpError,
       signInStep,
