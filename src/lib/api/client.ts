@@ -195,6 +195,52 @@ export async function confirmCvUpload(
   });
 }
 
+/**
+ * Metadata about the caller's currently-active CV. `hasCv` is the only
+ * always-present field; fileName / uploadedAt are undefined when no CV
+ * is on file, and uploadedAt may be undefined even when hasCv=true if
+ * the backend SP doesn't return that column.
+ */
+export type MyCvInfo = {
+  hasCv: boolean;
+  fileName?: string;
+  uploadedAt?: string;
+};
+
+/**
+ * GET /api/my-cv — returns metadata about the caller's active CV.
+ * Used by the Settings page's CV card to show the user what's on file
+ * before they replace it.
+ */
+export async function getMyCv(token: string | null): Promise<MyCvInfo> {
+  if (USE_MOCKS) {
+    await wait(150);
+    return { hasCv: false };
+  }
+  return callApi("/my-cv", { method: "GET", token });
+}
+
+/**
+ * A short-lived read link to the caller's own CV. SAS-based, 15 min
+ * expiry — never a permanent public URL.
+ */
+export type MyCvDownloadUrl = { downloadUrl: string; fileName: string };
+
+/**
+ * GET /api/my-cv-url — mints a short-lived read SAS URL for the
+ * caller's currently-active CV, so the Settings page can offer a
+ * "View" button that opens the CV in a new tab.
+ */
+export async function getMyCvDownloadUrl(
+  token: string | null,
+): Promise<MyCvDownloadUrl> {
+  if (USE_MOCKS) {
+    await wait(150);
+    return { downloadUrl: "mock://download", fileName: "mock.pdf" };
+  }
+  return callApi("/my-cv-url", { method: "GET", token });
+}
+
 export type CandidateProfile = CandidateProfileInput & {
   name: string;
   email: string;
