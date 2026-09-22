@@ -308,6 +308,47 @@ export async function updateNotificationPrefs(
   return callApi("/my-notification-prefs", { method: "POST", token, body: prefs });
 }
 
+export type EmailLanguage = "en" | "nl";
+
+/**
+ * GET /api/my-language
+ *
+ * The language a candidate's *emails* are sent in. Deliberately
+ * separate from the UI language toggle in the header — someone can
+ * read the site in English and still want mail in Dutch.
+ */
+export async function getEmailLanguage(
+  token: string | null,
+): Promise<{ preferredLanguage: EmailLanguage }> {
+  if (USE_MOCKS) {
+    await wait(150);
+    const raw =
+      typeof window !== "undefined" && window.sessionStorage.getItem("mock.lang");
+    return { preferredLanguage: (raw as EmailLanguage) || "nl" };
+  }
+  return callApi("/my-language", { token });
+}
+
+/**
+ * POST /api/my-language
+ */
+export async function updateEmailLanguage(
+  token: string | null,
+  preferredLanguage: EmailLanguage,
+): Promise<{ ok: true; preferredLanguage: EmailLanguage }> {
+  if (USE_MOCKS) {
+    await wait(250);
+    if (typeof window !== "undefined")
+      window.sessionStorage.setItem("mock.lang", preferredLanguage);
+    return { ok: true, preferredLanguage };
+  }
+  return callApi("/my-language", {
+    method: "POST",
+    token,
+    body: { preferredLanguage },
+  });
+}
+
 /**
  * TODO(backend): POST /api/update-profile
  * Updates name + profile fields (does NOT re-gate onboarding).

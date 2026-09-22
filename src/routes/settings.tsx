@@ -33,6 +33,8 @@ import {
   updateProfile,
   getNotificationPrefs,
   updateNotificationPrefs,
+  getEmailLanguage,
+  updateEmailLanguage,
   changePassword,
   deleteAccount,
   getMyCv,
@@ -43,6 +45,7 @@ import {
   type CandidateProfile,
   type NotificationPrefs,
   type MyCvInfo,
+  type EmailLanguage,
 } from "@/lib/api/client";
 
 export const Route = createFileRoute("/settings")({
@@ -86,6 +89,11 @@ function Settings() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingNotif, setSavingNotif] = useState(false);
 
+  // Email language. Separate from the UI language in the header: the
+  // site can be read in one language and mail received in another.
+  const [emailLang, setEmailLang] = useState<EmailLanguage | null>(null);
+  const [savingLang, setSavingLang] = useState(false);
+
   // CV state — mirrors the three-step upload the onboarding page already
   // uses (SAS URL → PUT to Blob → confirm). Replacement happens
   // server-side inside ConfirmCvUpload, which deactivates any prior
@@ -94,6 +102,22 @@ function Settings() {
   const [uploadingCv, setUploadingCv] = useState(false);
   const [openingCv, setOpeningCv] = useState(false);
   const cvInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function saveLanguage(next: EmailLanguage) {
+    const previous = emailLang;
+    setEmailLang(next);            // optimistic — the control feels instant
+    setSavingLang(true);
+    try {
+      const token = await getIdToken();
+      await updateEmailLanguage(token, next);
+      toast.success(t("settings.languageSaved"));
+    } catch {
+      setEmailLang(previous);      // roll back so the UI never lies
+      toast.error(t("settings.languageError"));
+    } finally {
+      setSavingLang(false);
+    }
+  }
 
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -104,15 +128,17 @@ function Settings() {
     let active = true;
     (async () => {
       const token = await getIdToken();
-      const [p, n, c] = await Promise.all([
+      const [p, n, c, l] = await Promise.all([
         getMyProfile(token),
         getNotificationPrefs(token),
         getMyCv(token),
+        getEmailLanguage(token),
       ]);
       if (!active) return;
       setProfile(p);
       setNotif(n);
       setCv(c);
+      setEmailLang(l.preferredLanguage);
     })();
     return () => {
       active = false;
@@ -442,6 +468,30 @@ function Settings() {
               {changingPw ? t("settings.updating") : t("settings.updatePassword")}
             </Button>
           </form>
+        </Card>
+
+        {/* Email language */}
+        <Card title={t("settings.languageTitle")} desc={t("settings.languageSubtitle")}>
+          {emailLang ? (
+            <div className="max-w-xs space-y-2">
+              <Label htmlFor="email-language">{t("settings.languageLabel")}</Label>
+              <Select
+                value={emailLang}
+                disabled={savingLang}
+                onValueChange={(v) => saveLanguage(v as EmailLanguage)}
+              >
+                <SelectTrigger id="email-language">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nl">{t("settings.languageNl")}</SelectItem>
+                  <SelectItem value="en">{t("settings.languageEn")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <p className="text-[13px] text-[color:var(--text-secondary)]">Loading…</p>
+          )}
         </Card>
 
         {/* Notifications */}

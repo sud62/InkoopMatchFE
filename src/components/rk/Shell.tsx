@@ -151,6 +151,7 @@ export function Header({ variant = "site" }: { variant?: "site" | "dash" }) {
       <Brand to="/" />
       <nav aria-label="Hoofdnavigatie">
         <Link to="/how-it-works">{t("nav.howItWorks")}</Link>
+        <Link to="/process">{t("nav.ourApproach")}</Link>
         <Link to="/about">{t("nav.about")}</Link>
       </nav>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>

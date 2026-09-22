@@ -11,6 +11,7 @@
 export type Dictionary = {
   nav: {
     howItWorks: string;
+    ourApproach: string;
     forOrganisations: string;
     about: string;
     signIn: string;
@@ -31,6 +32,9 @@ export type Dictionary = {
     signUpSubtitle: string;
     forgotSubtitle: string;
     continueWithGoogle: string;
+    googlePopupBlocked: string;
+    googlePopupBlockedHint: string;
+    googleError: string;
     fullName: string;
     email: string;
     password: string;
@@ -158,6 +162,13 @@ export type Dictionary = {
     newPassword: string;
     updatePassword: string;
     updating: string;
+    languageTitle: string;
+    languageSubtitle: string;
+    languageLabel: string;
+    languageEn: string;
+    languageNl: string;
+    languageSaved: string;
+    languageError: string;
     notificationsTitle: string;
     notificationsSubtitle: string;
     newMatchesLabel: string;
@@ -213,6 +224,7 @@ export type Dictionary = {
   howItWorks: {
     badge: string;
     title: string;
+    titleAccent: string;
     subtitle: string;
     processTitle: string;
     process1Title: string;
@@ -277,6 +289,7 @@ export type Dictionary = {
 export const en: Dictionary = {
   nav: {
     howItWorks: "How it works",
+    ourApproach: "Our approach",
     forOrganisations: "For organisations",
     about: "About",
     signIn: "Sign in",
@@ -297,6 +310,9 @@ export const en: Dictionary = {
     signUpSubtitle: "Join InkoopMatch and get matched to EU projects.",
     forgotSubtitle: "We'll email you a link to reset your password.",
     continueWithGoogle: "Continue with Google",
+    googlePopupBlocked: "Your browser blocked the Google sign-in window",
+    googlePopupBlockedHint: "Allow pop-ups for this site, then try again.",
+    googleError: "Google sign-in didn't work",
     fullName: "Full name",
     email: "Email",
     password: "Password",
@@ -427,6 +443,13 @@ export const en: Dictionary = {
     newPassword: "New password",
     updatePassword: "Update password",
     updating: "Updating…",
+    languageTitle: "Email language",
+    languageSubtitle: "The language we use when we email you.",
+    languageLabel: "Language",
+    languageEn: "English",
+    languageNl: "Nederlands",
+    languageSaved: "Email language updated",
+    languageError: "Could not update email language",
     notificationsTitle: "Notifications",
     notificationsSubtitle: "Choose what we email you about.",
     newMatchesLabel: "New matches",
@@ -483,10 +506,11 @@ export const en: Dictionary = {
   },
   howItWorks: {
     badge: "How it works",
-    title: "You know your craft. We look further than your job title.",
+    title: "You know your craft. We look further than",
+    titleAccent: "your job title.",
     subtitle:
       "InkoopMatch compares your full CV against every open project we track — not just the title on the posting.",
-    processTitle: "Our process, in three steps",
+    processTitle: "What happens to your CV",
     process1Title: "We gather open projects",
     process1Desc:
       "We collect open freelance opportunities from a number of external platforms, so you don't have to check each one yourself.",
@@ -562,6 +586,7 @@ export const en: Dictionary = {
 export const nl: Dictionary = {
   nav: {
     howItWorks: "Hoe het werkt",
+    ourApproach: "Onze aanpak",
     forOrganisations: "Voor organisaties",
     about: "Over ons",
     signIn: "Inloggen",
@@ -582,6 +607,9 @@ export const nl: Dictionary = {
     signUpSubtitle: "Word lid van InkoopMatch en word gematcht aan EU-projecten.",
     forgotSubtitle: "We sturen je een link om je wachtwoord opnieuw in te stellen.",
     continueWithGoogle: "Doorgaan met Google",
+    googlePopupBlocked: "Je browser heeft het Google-inlogvenster geblokkeerd",
+    googlePopupBlockedHint: "Sta pop-ups toe voor deze site en probeer het opnieuw.",
+    googleError: "Inloggen met Google is niet gelukt",
     fullName: "Volledige naam",
     email: "E-mail",
     password: "Wachtwoord",
@@ -713,6 +741,13 @@ export const nl: Dictionary = {
     newPassword: "Nieuw wachtwoord",
     updatePassword: "Wachtwoord bijwerken",
     updating: "Bezig met bijwerken…",
+    languageTitle: "E-mailtaal",
+    languageSubtitle: "De taal waarin wij je e-mails sturen.",
+    languageLabel: "Taal",
+    languageEn: "Engels",
+    languageNl: "Nederlands",
+    languageSaved: "E-mailtaal bijgewerkt",
+    languageError: "E-mailtaal kon niet worden bijgewerkt",
     notificationsTitle: "Meldingen",
     notificationsSubtitle: "Kies waarover we je mailen.",
     newMatchesLabel: "Nieuwe matches",
@@ -770,10 +805,11 @@ export const nl: Dictionary = {
   },
   howItWorks: {
     badge: "Hoe het werkt",
-    title: "Jij kent je vak. Wij kijken verder dan je functietitel.",
+    title: "Jij kent je vak. Wij kijken verder dan",
+    titleAccent: "je functietitel.",
     subtitle:
       "InkoopMatch vergelijkt je volledige cv met elke openstaande opdracht die we bijhouden — niet alleen de titel van de vacature.",
-    processTitle: "Ons proces, in drie stappen",
+    processTitle: "Wat er met je cv gebeurt",
     process1Title: "We verzamelen openstaande opdrachten",
     process1Desc:
       "We halen openstaande opdrachten op van verschillende externe platforms, zodat jij niet elk platform apart hoeft te checken.",

@@ -1554,31 +1554,27 @@ footer {
   }
 }
 
-/* Keep each step number visually attached to its heading. */
-.steps span {
-  display: block;
-  margin-bottom: 12px
-}
-
-.steps h3 {
-  margin-top: 0
-}
-
-.boxes-intro {
-  margin-inline: auto
+/* Step cards. One flush left edge for badge, heading and copy; equal
+   height across the row regardless of copy length. These rules replace
+   an earlier set that defined `.steps article` four times with
+   conflicting display values — the surviving `display: block` left an
+   orphaned 48px indent on the paragraph only, which is what made the
+   left edge ragged. */
+.steps {
+  align-items: stretch
 }
 
 .steps article {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  column-gap: 14px;
-  align-items: center
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: 100%
 }
 
 .steps span {
   width: 34px;
   height: 34px;
-  margin: 0;
+  margin: 0 0 20px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -1587,17 +1583,15 @@ footer {
 }
 
 .steps h3 {
-  grid-column: 2;
+  margin: 0 0 10px
+}
+
+.steps article > p {
   margin: 0
 }
 
-.steps p {
-  grid-column: 2;
-  margin-top: 10px
-}
-
-.steps article {
-  display: block
+.boxes-intro {
+  margin-inline: auto
 }
 
 .step-heading {
@@ -1607,7 +1601,8 @@ footer {
 }
 
 .step-heading span {
-  flex: 0 0 34px
+  flex: 0 0 34px;
+  margin-bottom: 0
 }
 
 .step-heading h3 {
@@ -1615,9 +1610,6 @@ footer {
   line-height: 1.25
 }
 
-.steps article>p {
-  margin: 14px 0 0 48px
-}
 
 .brand-crop {
   width: 66px;

@@ -25,6 +25,11 @@ import {
   type ResetPasswordSubmitCodeError,
   type ResetPasswordSubmitPasswordError,
 } from "@azure/msal-browser/custom-auth";
+import {
+  AuthError,
+  type AccountInfo,
+  type AuthenticationResult,
+} from "@azure/msal-browser";
 import { customAuthConfig } from "./customAuthConfig";
 import { syncUser, type UserSyncResult } from "@/lib/api/client";
 
@@ -32,6 +37,12 @@ import { syncUser, type UserSyncResult } from "@/lib/api/client";
  * Native auth (email + password + email OTP) driven from our own modal,
  * plus the user-sync handshake that resolves the Entra identity to a
  * real row in the `users` table.
+ *
+ * Google is the one exception to "everything happens in our modal":
+ * Entra's native auth supports local accounts only, so social sign-in
+ * runs as a browser-delegated popup (signInWithGoogle below). Both
+ * paths write to the same MSAL cache, so getIdToken(), page-reload
+ * restore and logout() work unchanged for either kind of account.
  *
  * SDK shape notes (verified against type declarations):
  *  - SignUpResult has NO isCompleted(); completion only appears after
@@ -46,6 +57,29 @@ export type AuthUser = {
   name: string;
   email: string;
 };
+
+/**
+ * What happened when the user clicked "Continue with Google". An
+ * outcome rather than a thrown error, so the modal can treat "closed
+ * the popup" as a non-event instead of an error toast.
+ */
+export type GoogleSignInOutcome =
+  | { status: "success"; profileCompleted: boolean }
+  | { status: "cancelled" }
+  | { status: "blocked" }
+  | { status: "error"; message: string };
+
+const GOOGLE_SCOPES = ["openid", "profile", "email"];
+
+/**
+ * Static page (public/auth-redirect.html) that hands the popup's result
+ * back to this window. Required by MSAL v5 — see that file. Built from
+ * the current origin so www and apex each round-trip to themselves;
+ * the bridge talks over BroadcastChannel, which is same-origin only.
+ * Every origin used here must be registered as a Single-page
+ * application redirect URI on the app registration.
+ */
+const REDIRECT_BRIDGE_PATH = "/auth-redirect.html";
 
 type PendingSignUpState =
   | { kind: "code"; state: SignUpCodeRequiredState }
@@ -84,6 +118,8 @@ type AuthContextValue = {
   getIdToken: () => Promise<string | null>;
   logout: () => Promise<void>;
 
+  signInWithGoogle: () => Promise<GoogleSignInOutcome>;
+
   signUpStep: FlowStep;
   signUpError: string | null;
   signUpStart: (email: string, password: string, name: string) => Promise<void>;
@@ -116,11 +152,55 @@ function accountDataToUser(data: CustomAuthAccountData): AuthUser {
     oid: (claims.oid as string) ?? account.localAccountId,
     name: account.name ?? (claims.name as string) ?? "",
     email:
-      account.username ??
       (claims.email as string) ??
+      account.username ??
       (claims.preferred_username as string) ??
       "",
   };
+}
+
+/** Same mapping as above, from a plain MSAL account (popup result). */
+function msalAccountToUser(account: AccountInfo): AuthUser {
+  const claims = (account.idTokenClaims ?? {}) as Record<string, unknown>;
+  return {
+    oid: (claims.oid as string) ?? account.localAccountId,
+    name: account.name ?? (claims.name as string) ?? "",
+    email:
+      (claims.email as string) ??
+      account.username ??
+      (claims.preferred_username as string) ??
+      "",
+  };
+}
+
+function describeGoogleError(e: unknown): GoogleSignInOutcome {
+  const code = e instanceof AuthError ? e.errorCode : "";
+  // Closed the popup, or said no on Google's consent screen.
+  if (code === "user_cancelled" || code === "access_denied") {
+    return { status: "cancelled" };
+  }
+  // The browser refused to open the popup at all.
+  if (code === "popup_window_error" || code === "empty_window_error") {
+    return { status: "blocked" };
+  }
+  console.error("[auth] Google sign-in failed", e);
+  // timed_out almost always means the popup never reached a working
+  // redirect bridge — check /auth-redirect.html is being served.
+  const message =
+    e instanceof AuthError
+      ? e.errorMessage || e.errorCode
+      : "Something went wrong. Please try again.";
+  return { status: "error", message };
+}
+
+/**
+ * True when an ID token is expired or will be within five minutes.
+ * The margin covers clock skew and the request already in flight.
+ */
+function isIdTokenExpiring(claims: Record<string, unknown> | undefined): boolean {
+  const exp = typeof claims?.exp === "number" ? claims.exp : undefined;
+  if (!exp) return true;
+  return exp * 1000 < Date.now() + 5 * 60 * 1000;
 }
 
 function describeSignUpError(err: SignUpError): string {
@@ -149,7 +229,7 @@ function describeSignInError(err: SignInError): string {
     return "You'll need to reset your password before signing in again.";
   }
   if (err.isUnsupportedChallengeType()) {
-    return "This account signs in a different way — try 'Continue with Google' or 'Continue with Microsoft'.";
+    return "This account signs in a different way — try 'Continue with Google' instead.";
   }
   return "Couldn't sign in with those details. Please try again.";
 }
@@ -163,7 +243,7 @@ function describeResetPasswordError(err: ResetPasswordError): string {
   }
   if (err.isInvalidUsername()) return "That doesn't look like a valid email address.";
   if (err.isUnsupportedChallengeType()) {
-    return "This account can't reset its password this way — try 'Continue with Google' or 'Continue with Microsoft'.";
+    return "This account doesn't use a password — try 'Continue with Google' instead.";
   }
   return err.errorData.errorDescription ?? "Something went wrong. Please try again.";
 }
@@ -203,19 +283,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [resetPasswordError, setResetPasswordError] = useState<string | null>(null);
   const pendingResetPassword = useRef<PendingResetPasswordState | null>(null);
 
+  // When the token has expired, several API calls can ask for a new one
+  // at the same moment. They share a single renewal instead of racing.
+  const refreshInFlight = useRef<Promise<string | null> | null>(null);
+
   const getIdToken = async (): Promise<string | null> => {
     const client = clientRef.current;
     if (!client) return null;
     const accountResult = client.getCurrentAccount();
     if (!accountResult.isCompleted() || !accountResult.data) return null;
-    return accountResult.data.getIdToken() ?? null;
+    const account = accountResult.data;
+
+    // The token saved at sign-in is only valid for about an hour. Use it
+    // while it's fresh; otherwise renew it with the cached refresh token.
+    // (Returning it as-is forever is what made every request fail with
+    // 401 once a tab had been open for an hour.)
+    const cached = account.getIdToken();
+    if (
+      cached &&
+      !isIdTokenExpiring(account.getClaims() as Record<string, unknown> | undefined)
+    ) {
+      return cached;
+    }
+
+    if (!refreshInFlight.current) {
+      refreshInFlight.current = (async () => {
+        const renewed = await account.getAccessToken({ forceRefresh: true });
+        if (renewed.isCompleted() && renewed.data?.idToken) {
+          return renewed.data.idToken;
+        }
+        // No usable refresh token either: the session is over. End it
+        // cleanly so the app shows "Sign in", rather than looking signed
+        // in while every request is rejected.
+        console.warn("[auth] session expired — signing out locally", renewed.error);
+        await endLocalSession();
+        return null;
+      })().finally(() => {
+        refreshInFlight.current = null;
+      });
+    }
+    return refreshInFlight.current;
   };
 
   /** Call /api/user-sync and store the resulting identity + gate. */
-  const runSync = async (emailHint?: string) => {
+  const runSync = async (emailHint?: string): Promise<boolean | null> => {
     try {
       const token = await getIdToken();
-      if (!token) return;
+      if (!token) return null;
       // Dev-only: lets the mock API key onboarding state per-user so a
       // new signup in the same browser doesn't inherit a prior user's
       // "onboarded" flag. Harmless when real endpoints are used.
@@ -227,8 +341,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUserId(result.userId);
       setProfileCompleted(result.profileCompleted);
       setConsentGiven(result.consentGiven);
+      return result.profileCompleted;
     } catch (e) {
       console.error("[auth] user-sync failed", e);
+      return null;
     } finally {
       // Always flip this — even on failure — so guards can make a
       // decision either way. Blocking forever on a failed sync is
@@ -247,6 +363,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async (client) => {
         if (cancelled) return;
         clientRef.current = client;
+        // The library that answers "who is signed in?" just takes the
+        // FIRST cached account. With more than one cached, an earlier
+        // session wasn't cleaned up and there's no reliable way to tell
+        // which is current — so start clean rather than guess wrong.
+        if (client.getAllAccounts().length > 1) {
+          await client.clearCache();
+          client.setActiveAccount(null);
+        }
         const accountResult = client.getCurrentAccount();
         if (accountResult.isCompleted() && accountResult.data) {
           const u0 = accountDataToUser(accountResult.data);
@@ -510,6 +634,81 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ── Google (browser-delegated popup) ─────────────────────────────
+  const signInWithGoogle = async (): Promise<GoogleSignInOutcome> => {
+    const client = clientRef.current;
+    if (!client) {
+      return { status: "error", message: "Sign-in is still loading. Try again in a moment." };
+    }
+
+    // Drop any leftover active account. With prompt=login (below), MSAL
+    // turns the active account into a login_hint, and domain_hint plus
+    // login_hint breaks repeat sign-ins (AADSTS165000). Synchronous, so
+    // it doesn't delay the popup.
+    client.setActiveAccount(null);
+
+    let result: AuthenticationResult;
+    try {
+      // Nothing may be awaited before this call. Browsers only allow a
+      // popup inside the click that triggered it — a single await in
+      // between and it gets silently blocked.
+      result = await client.loginPopup({
+        scopes: GOOGLE_SCOPES,
+        redirectUri: `${window.location.origin}${REDIRECT_BRIDGE_PATH}`,
+        // Capital G matters: "Google" goes straight to Google's account
+        // picker; "google" fails with AADSTS90023 and "google.com"
+        // still shows Microsoft's page first. Do NOT add login_hint
+        // alongside it — that combination breaks repeat sign-ins
+        // (AADSTS165000).
+        domainHint: "Google",
+        // "login", not "select_account": select_account makes Entra show
+        // its own sign-in page, overriding domain_hint. login goes
+        // straight to Google AND forces a fresh sign-in, so a shared
+        // computer can't silently reuse the previous person's session.
+        prompt: "login",
+      });
+    } catch (e) {
+      return describeGoogleError(e);
+    }
+
+    if (!result.account) {
+      return { status: "error", message: "Google sign-in returned no account." };
+    }
+    // Keep only the account that just signed in. Anything left over from
+    // an earlier session would otherwise be picked as "current" (it's
+    // always the first cached account), and the app would sync — and
+    // route — as the wrong person.
+    const keep = result.account.homeAccountId;
+    for (const other of client.getAllAccounts()) {
+      if (other.homeAccountId !== keep) {
+        await client.clearCache({ account: other });
+      }
+    }
+    client.setActiveAccount(result.account);
+    const u = msalAccountToUser(result.account);
+    setUser(u);
+    const profileCompleted = await runSync(u.email);
+    return { status: "success", profileCompleted: profileCompleted ?? false };
+  };
+
+  /** Forget every cached account and reset auth state (this device only). */
+  const endLocalSession = async () => {
+    const client = clientRef.current;
+    if (client) {
+      try {
+        await client.clearCache();
+      } catch (e) {
+        console.error("[auth] clearing the token cache failed", e);
+      }
+      client.setActiveAccount(null);
+    }
+    setUser(null);
+    setUserId(null);
+    setProfileCompleted(false);
+    setConsentGiven(false);
+    setSyncCompleted(false);
+  };
+
   const logout = async () => {
     const client = clientRef.current;
     if (!client) return;
@@ -517,11 +716,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (accountResult.isCompleted() && accountResult.data) {
       await accountResult.data.signOut();
     }
-    setUser(null);
-    setUserId(null);
-    setProfileCompleted(false);
-    setConsentGiven(false);
-    setSyncCompleted(false);
+    // signOut() removes a single account. Clear everything, so no stale
+    // account is left to be picked up as "current" next time.
+    await endLocalSession();
   };
 
   const value = useMemo<AuthContextValue>(
@@ -536,6 +733,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshSync,
       getIdToken,
       logout,
+      signInWithGoogle,
       signUpStep,
       signUpError,
       signUpStart,

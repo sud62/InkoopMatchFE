@@ -24,9 +24,6 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const notImplemented = (what: string) =>
-    toast(`${what} is not connected yet`, { description: "Coming soon." });
-
   const resetAll = () => {
     setView("signin");
     setName("");
@@ -60,6 +57,35 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
       } else if (view === "forgot-newpassword") {
         await auth.submitNewPassword(newPassword);
       }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Google runs as a popup outside this modal (native auth can't do
+  // social providers). The call chain from the click down to
+  // loginPopup must stay free of awaits, or the browser blocks the
+  // popup — so no pre-checks that await anything go here.
+  const handleGoogle = async () => {
+    if (!auth.isReady) {
+      toast("Still loading", { description: "Give it a second and try again." });
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const outcome = await auth.signInWithGoogle();
+      if (outcome.status === "success") {
+        setOpen(false);
+        resetAll();
+        navigate({ to: outcome.profileCompleted ? "/dashboard" : "/onboarding" });
+      } else if (outcome.status === "blocked") {
+        toast(t("auth.googlePopupBlocked"), {
+          description: t("auth.googlePopupBlockedHint"),
+        });
+      } else if (outcome.status === "error") {
+        toast(t("auth.googleError"), { description: outcome.message });
+      }
+      // "cancelled" — the user closed the popup on purpose. Say nothing.
     } finally {
       setSubmitting(false);
     }
@@ -178,7 +204,7 @@ export function SignInModal({ trigger }: { trigger: React.ReactNode }) {
             type="button"
             className="button button-outline"
             style={{ width: "100%", marginBottom: 14 }}
-            onClick={() => notImplemented("Google sign-in")}
+            onClick={handleGoogle}
             disabled={submitting}
           >
             {t("auth.continueWithGoogle")}

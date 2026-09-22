@@ -63,60 +63,170 @@ const content = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────
+// Page-scoped styles, prefixed `abt-`. Structure: hero with the
+// "who's behind it" card on the right (that IS the About story, so it
+// belongs in the first screen), a sage band of trust points, dark CTA.
+// ─────────────────────────────────────────────────────────────────
+const styles = `
+  /* ── Hero: story left, "who's behind" card right ─────── */
+  .abt-hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 64px;
+    align-items: start;
+    padding-block: 54px 88px;
+  }
+  .abt-hero h1 {
+    font-size: clamp(44px, 4.6vw, 64px);
+    line-height: 1.06;
+    letter-spacing: -.045em;
+    font-weight: 780;
+    margin: 22px 0 22px;
+    color: var(--ink);
+  }
+  .abt-hero h1 em {
+    font-style: normal;
+    color: var(--green);
+  }
+  .abt-hero .lead {
+    max-width: 52ch;
+  }
+
+  .abt-who {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 34px 36px 32px;
+    margin-top: 48px;
+    box-shadow: var(--shadow);
+  }
+  .abt-who h2 {
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: -.025em;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .abt-who p {
+    margin: 0 0 14px;
+    color: #405363;
+    line-height: 1.65;
+    font-size: 15px;
+  }
+  .abt-who .text-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-weight: 700;
+    color: var(--green-dark);
+    text-decoration: none;
+    border-bottom: 2px solid currentColor;
+    padding-bottom: 2px;
+    font-size: 15px;
+  }
+
+  /* ── Trust points: a sage band, four across ───────────── */
+  .abt-points {
+    background: var(--sage);
+    padding-block: 64px 72px;
+  }
+  .abt-points ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 40px;
+  }
+  .abt-points li {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .abt-points li::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-top: 7px;
+    justify-self: center;
+  }
+  .abt-points strong {
+    display: block;
+    font-size: 16px;
+    color: var(--ink);
+    letter-spacing: -.01em;
+  }
+  .abt-points p {
+    margin: 6px 0 0;
+    font-size: 14px;
+    line-height: 1.55;
+    color: #405363;
+  }
+
+  @media (max-width: 960px) {
+    .abt-hero { grid-template-columns: 1fr; gap: 36px; }
+    .abt-who { margin-top: 0; }
+    .abt-points ul { grid-template-columns: 1fr 1fr; gap: 28px; }
+  }
+  @media (max-width: 560px) {
+    .abt-points ul { grid-template-columns: 1fr; }
+  }
+`;
+
 function About() {
   const { language } = useLanguage();
   const c = language === "nl" ? content.nl : content.en;
 
   return (
     <PageShell>
-      <section className="shell" style={{ paddingTop: 36, textAlign: "center" }}>
-        <p className="section-kicker">{c.kicker}</p>
-        <h1 style={{ marginTop: 12 }}>
-          {c.title}
-          <br />
-          <em>{c.titleAccent}</em>
-        </h1>
-        <p style={{ margin: "16px auto 0", maxWidth: 620, color: "var(--muted)" }}>{c.intro}</p>
-      </section>
+      <style>{styles}</style>
 
-      <section className="shell" style={{ marginTop: 48 }}>
-        <div
-          style={{
-            borderRadius: 20,
-            border: "1px solid var(--line)",
-            background: "var(--paper)",
-            boxShadow: "var(--shadow)",
-            padding: "36px 40px",
-          }}
-        >
-          <h2 style={{ fontSize: 22 }}>{c.whoTitle}</h2>
-          <p style={{ marginTop: 12, maxWidth: 680, color: "var(--muted)" }}>{c.whoBody1}</p>
-          <p style={{ marginTop: 12, maxWidth: 680, color: "var(--muted)" }}>{c.whoBody2}</p>
-          <Link to="/process" style={{ display: "inline-block", marginTop: 16, fontWeight: 700, color: "var(--green)" }}>
+      {/* ── Hero: story left, who's-behind card right ── */}
+      <section className="shell abt-hero" aria-labelledby="abt-title">
+        <div>
+          <p className="section-kicker">{c.kicker}</p>
+          <h1 id="abt-title">
+            {c.title} <em>{c.titleAccent}</em>
+          </h1>
+          <p className="lead">{c.intro}</p>
+        </div>
+        <aside className="abt-who" aria-labelledby="abt-who-title">
+          <h2 id="abt-who-title">{c.whoTitle}</h2>
+          <p>{c.whoBody1}</p>
+          <p>{c.whoBody2}</p>
+          <Link className="text-link" to="/process">
             {c.whoLink}
           </Link>
+        </aside>
+      </section>
+
+      {/* ── Trust points as a band ── */}
+      <section className="abt-points" aria-label={c.kicker}>
+        <div className="shell">
+          <ul>
+            {c.points.map((pt) => (
+              <li key={pt.title}>
+                <div>
+                  <strong>{pt.title}</strong>
+                  <p>{pt.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
-      <section className="proof" style={{ marginTop: 48 }}>
-        <div className="shell proof-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
-          {c.points.map((p) => (
-            <article key={p.title}>
-              <span className="proof-icon">✓</span>
-              <div>
-                <strong style={{ fontSize: 16 }}>{p.title}</strong>
-                <p>{p.desc}</p>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="organisation" style={{ marginTop: 0 }}>
+      {/* ── CTA ── */}
+      <section className="organisation">
         <div className="shell organisation-inner">
           <div>
-            <p className="section-kicker">{c.ctaTitle}</p>
-            <h2>{c.ctaSubtitle}</h2>
+            <h2>{c.ctaTitle}</h2>
+            <p>{c.ctaSubtitle}</p>
           </div>
           <Link className="button button-light" to="/contact">
             {c.ctaButton}
